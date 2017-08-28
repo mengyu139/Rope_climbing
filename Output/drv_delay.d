@@ -1,0 +1,17 @@
+..\output\drv_delay.o: drv_delay.c
+..\output\drv_delay.o: drv_delay.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_rcc.h
+..\output\drv_delay.o: ..\CMSIS\stm32f10x.h
+..\output\drv_delay.o: ..\CMSIS\core_cm3.h
+..\output\drv_delay.o: C:\Keil_v5\ARM\ARMCC\bin\..\include\stdint.h
+..\output\drv_delay.o: ..\CMSIS\system_stm32f10x.h
+..\output\drv_delay.o: ..\USER\stm32f10x_conf.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_dma.h
+..\output\drv_delay.o: ..\CMSIS\stm32f10x.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_exti.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_gpio.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_rcc.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_spi.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_tim.h
+..\output\drv_delay.o: ..\FWlib\inc\stm32f10x_usart.h
+..\output\drv_delay.o: ..\FWlib\inc\misc.h
