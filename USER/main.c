@@ -15,14 +15,10 @@
 #include "CAN1.h"
 #include "sys.h"
 
+#include "Advance_control.h"
 
 
-//1.³¬Éù²¨   ok 
-//2.PWM  1 channel   ok
-//3.±àÂëÆ÷ AB   ok 
-//4.SPI ÎÞÏßÄ£¿é ok
-//5. Í¸Ã÷´®¿Ú  
-//6. ¶ÁÈ¡³¬Éù²¨ ok
+
 
 
 extern uint8_t control_sweep ;
@@ -46,10 +42,12 @@ void SendValue(int32_t v)
 		v = -v;
 	}
 	
-	send_buff[1] = v /1000000 + 0x30;
-	send_buff[2] = v%1000000/100000 + 0x30;
-	send_buff[3] = v%100000/ 10000 + 0x30;
-	send_buff[4] = v%10000/1000 + 0x30;
+	send_buff[1] = v/100000 + 0x30;
+	send_buff[2] = v%100000/ 10000 + 0x30;
+	send_buff[3] = v%10000/1000 + 0x30;
+	
+	send_buff[4] = '.';
+	
 	send_buff[5] = v%1000/100 + 0x30;
 	send_buff[6] = v%100/10 + 0x30;
 	send_buff[7] = v%10 + 0x30;
@@ -59,7 +57,7 @@ void SendValue(int32_t v)
 
 void Send_data(uint8_t type , int32_t v , int end)
 {
-	usart_send_byte(type);
+	//usart_send_byte(type);
 	SendValue(v);
 	
 	if( end )
@@ -92,12 +90,10 @@ uint8_t exti_switch = 0;
 float x = 0;
 uint8_t x_buff[4];
 	
-
 uint8_t robot_data[8]={0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55};
 
 int main(void)
 {	
-	
   NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
 
@@ -114,6 +110,16 @@ int main(void)
 	
 	Motor_init();
 	
+	if( MY_ID == 0)
+	{
+	//	delay_ms(1000);
+//		delay_ms(1000);
+//		delay_ms(1000);
+//		delay_ms(1000);
+//		delay_ms(1000);
+	
+	}
+	
 	
 	Clock_init();
 
@@ -123,6 +129,8 @@ int main(void)
 	USART2_Config();//PA2 TX  PA3  RX
 	
 	delay_ms(100);
+	
+	Advanced_control_init();
 	
 
 	#if 0
@@ -147,20 +155,31 @@ int main(void)
 		#if 1
 		if( MY_ID == 0 )
 		{
-			Set_target(MY_ID,x);
+			//Set_target(MY_ID,x);
 			//control_sweep = 0;
 		}
-		
-		
-	
 		
 		//RoboModule_open_loop_mode_set_data(MOTOR_ALL,x);
 		
 		#endif
 		
+		if( MY_ID == 0 )
+		{
+			//Send_data(0,12345,0);
+			//Send_data(0,54321,1);
+			
+			Send_data(0,(int32_t)(s_communication.s_car[0].height*1000),0);
+			Send_data(0,(int32_t)(s_communication.s_car[2].height*1000),0);	
+			Send_data(0,(int32_t)(s_communication.s_car[0].target_height*1000),1);	
+			
+			
+		}
+		
+		delay_ms(200);
 		
 		
-		delay_ms(500);
+		
+		
 		
 		//PBout(14)= ~PBout(14);
 	  

@@ -17,6 +17,7 @@ void usart_send_string( uint8_t * s );
 void task_uart_detect(void);
 void send_some_bytes(uint8_t * buff , int num);
 
+void Response_to_uart_command(void);
 
 
 #endif

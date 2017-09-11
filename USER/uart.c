@@ -1,6 +1,6 @@
 #include "uart.h"
 #include "protocal.h"
-
+#include "Motor.h"
 
 
 
@@ -11,6 +11,7 @@ void Uart_para_init(void)
 	s_communication.rev_cnt=0;
 	s_communication.rev_last_cnt=0;
 	s_communication.signal = 0;
+	s_communication.op_mode = 0;
 	
 	for(i=0;i<MAX_REV_NUM;i++)
 	{
@@ -154,7 +155,6 @@ void task_uart_detect(void)
 		s_communication.rev_cnt=0;
 		s_communication.rev_last_cnt=0;
 		s_communication.over_time_cnt=0;
-		s_communication.signal=0;
 		return;
 	}
 
@@ -172,7 +172,7 @@ void task_uart_detect(void)
 				
 				
 				//2. protocol process
-				//protocol_rev();
+				Response_to_uart_command();
 				
 				//x. clear rev buff
 				for(i=0;i<s_communication.rev_cnt;i++)
@@ -200,6 +200,61 @@ void task_uart_detect(void)
 	}
 	
 }
+
+
+void Response_to_uart_command(void)
+{
+	float target;
+	
+	if(s_communication.rev_cnt==7)
+	{
+		if( s_communication.rev_buff[0]==0x55 )
+		{
+			//点动
+			if(  s_communication.rev_buff[1]==0x01 )
+			{
+				target =  (s_communication.rev_buff[4]-0x30)*100+(s_communication.rev_buff[5]-0x30)*10+(s_communication.rev_buff[6]-0x30);
+				target = target / 100.0;
+				
+				if( s_communication.rev_buff[3]==1 )
+				{
+					target = -target;
+				}
+				s_communication.op_mode = 1;
+				s_communication.op_number = s_communication.rev_buff[2] ;
+				
+				//如果是0号，直接设定
+				if( s_communication.op_number == 0 )
+				{
+					Set_target(0 , target);
+				}
+				//其他机器，存储到target, 用 can 发送
+				else
+				{
+					s_communication.s_car[ s_communication.op_number].target_height = target;
+				}		
+			}
+			
+			//track
+			else if(  s_communication.rev_buff[1]==0x02 )
+			{
+				s_communication.op_mode = 2;
+				
+				target =  (s_communication.rev_buff[4]-0x30)*100+(s_communication.rev_buff[5]-0x30)*10+(s_communication.rev_buff[6]-0x30);
+				target = target / 100.0;
+				
+				if( s_communication.rev_buff[3]==1 )
+				{
+					target = -target;
+				}
+				
+				//Set_target(0 , target);
+				
+			}
+		}
+	}
+}
+	
 
   
 void send_some_bytes(uint8_t * buff , int num)

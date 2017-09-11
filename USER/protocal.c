@@ -1,9 +1,9 @@
 #include "protocal.h"
 #include "uart.h"
 #include "CAN1.h"
-
+#include "Advance_control.h"
 #include "Motor.h"
-
+#include "clock.h"
 
 
 struct S_COMMUNICATION s_communication;
@@ -11,14 +11,16 @@ struct S_COMMUNICATION s_communication;
 
 
 ////flag
-////0: set target
+////0: set all target : track
 ////1: share info 
+////2: 点动
 void Proto_send(uint8_t flag )
 {
 	if( flag == 0 )
 	{
+		
 		Float_to_Byte( s_communication.s_car[0].target_height , s_can_msg.tx_buff);
-		CAN1_Send( ((MY_ID+0x20)<<4)+flag , s_can_msg.tx_buff );
+		CAN1_Send( 0x200 , s_can_msg.tx_buff );
 	}
 	
 	else if( flag == 1 )
@@ -26,9 +28,19 @@ void Proto_send(uint8_t flag )
 			Float_to_Byte( s_communication.s_car[MY_ID].height , s_can_msg.tx_buff);
 			Float_to_Byte( s_communication.s_car[MY_ID].speed , s_can_msg.tx_buff+4);
 			
-			CAN1_Send( ((MY_ID+0x20)<<4)+flag , s_can_msg.tx_buff );
+			CAN1_Send( ((MY_ID+0x20)<<4)+1 , s_can_msg.tx_buff );
 	}
-	
+	else if(  flag == 2 )
+	{
+		if( s_communication.op_number !=0  )
+		{
+			Float_to_Byte( s_communication.s_car[s_communication.op_number].target_height , s_can_msg.tx_buff);
+		
+			CAN1_Send( ((s_communication.op_number+0x20)<<4)+0 , s_can_msg.tx_buff );
+		}
+		
+		
+	}
 	
 }
 
@@ -43,28 +55,42 @@ void protocol_rev(void)
 	{
 		if( s_can_msg.RxMessage.StdId == 0x200 )
 		{	
+			 s_communication.op_mode=2;
+			
 				Byte_to_Float( &rev_target_height , s_can_msg.RxMessage.Data  );
-				
-			//not only change target height , and direction update
+
+				//s_communication.s_car[MY_ID].target_height = rev_target_height;
+				s_communication.s_car[0].target_height = rev_target_height;
+			
 				Set_target( MY_ID,rev_target_height );
-			
-			// in slavers , , only update target height in master 
-				//Byte_to_Float( &s_communication.s_car[0].target_height , s_can_msg.RxMessage.Data  );	
-			
+
 			return;
 		}	
 	}
 
 	
+	id = (s_can_msg.RxMessage.StdId & 0x0f0)>>4;
+	
 	// robot share info
-	if( (s_can_msg.RxMessage.StdId & 0xf00) == 0x200 )
+	if( ((s_can_msg.RxMessage.StdId & 0xf00) == 0x200)&&(  id< MAX_CAR_NUM ) &&( (s_can_msg.RxMessage.StdId & 0x00f) == 1 ) )
 	{
 		//we onely have 4 robot at most currently
-		id = (s_can_msg.RxMessage.StdId & 0x0f0)>>4;
-		if( (  id< MAX_CAR_NUM ) &&( (s_can_msg.RxMessage.StdId & 0x00f) == 1 ) )
-		{
 			Byte_to_Float( &s_communication.s_car[id].height , s_can_msg.RxMessage.Data );
 			Byte_to_Float( &s_communication.s_car[id].speed , s_can_msg.RxMessage.Data+4 );
+	}
+	
+	
+	//点动
+	else if(  ((s_can_msg.RxMessage.StdId & 0xf00) == 0x200)&&(  id< MAX_CAR_NUM ) &&( (s_can_msg.RxMessage.StdId & 0x00f) == 0 ))
+	{
+		
+		Byte_to_Float( &rev_target_height , s_can_msg.RxMessage.Data );
+		
+		if( MY_ID == id )
+		{
+			s_communication.op_mode=1;
+			s_communication.op_number=MY_ID;
+			Set_target( MY_ID,rev_target_height );
 		}
 	}
 	

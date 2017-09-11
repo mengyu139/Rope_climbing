@@ -5,14 +5,22 @@
 #include "uart.h"
 #include "CAN1.h"
 #include "protocal.h"
+#include "Advance_control.h"
+
+
 uint32_t led_cnt = 0;
 
 uint32_t Global_clock = 0;
+uint32_t Globale_flag = 0;
+
 uint32_t send_clock  =0;
+
+uint32_t set_target_cnt = 0;
+uint16_t Index = 0;
 
 volatile int flag = 0;
 
-uint16_t Index = 0;
+
 
 extern float s_buff[Discrete_num];
 
@@ -58,12 +66,11 @@ void Clock_init(void)
 //中断服务函数
 void TIM1_UP_IRQHandler(void)
 {	
+	float tmp_output;
 	int cur , pre;
-	
 	if(TIM_GetITStatus(TIM1,TIM_IT_Update)==SET) 
 	{
 //		float tmp = 0.5;
-		
 		led_cnt++;
 		Motor_Clock ++;
 		Global_clock++;
@@ -71,94 +78,137 @@ void TIM1_UP_IRQHandler(void)
 		send_clock ++;
 		s_can_msg.Clock ++;
 		
+		
 		Led_Flash();
+		
 		
 		//update motor deedback data including: speed ,  absolute position , and current?
 		task_update_motor_data();
 		
 		
 		//电机控制
-		#if 1
+		#if 0
 		task_motor_control(1);
 		#endif
 		
+
 		
-		//超声波启动
+	
 		
-		if( s_sonic.Clock >= 15 )//30ms
+		
+		//点动模式
+		if( s_communication.op_mode == 1 )
 		{
-			s_sonic.Clock = 0;
-			//Sonic_start();
-		}
-		
-		
-		//set target and share info through CAN
-		if( s_can_msg.Clock % 2 == 0 )
-		{
-			//ONLY master set transmit the target to others
+			//更新电机数据
+			//控制电机
+			//发送数据
+			
 			if( MY_ID == 0 )
 			{
-				Proto_send(0);
-				
-				if( control_sweep == 1 )
+				Proto_send(2);
+			}
+			
+			
+			//control
+			Advanced_control(0);
+			
+			if( s_communication.s_car[MY_ID].status == 1 )
+			{
+				tmp_output = s_advanced_control.Us + POSITIVE_COMPASETION;
+				if( tmp_output < 0 )
 				{
-					s_can_msg.tx_buff[0] = 0xff;
-					CAN1_Send( 0x202 , s_can_msg.tx_buff );
+					tmp_output = 0;
 				}
 			}
+			else if( s_communication.s_car[MY_ID].status == -1 )
+			{
+				tmp_output = s_advanced_control.Us + NEGTIVE_COMPASETION;	
+				if( tmp_output > 0 )
+				{
+					tmp_output = 0;
+				}
+			}
+			
+			//output
+			motor_out(tmp_output);
+			
 		}
-		else
+		
+		// track mode
+		else if( s_communication.op_mode == 2 )
 		{
+			set_target_cnt ++;
+			#if 1
+			if( MY_ID == 0 )
+			{
+				if( set_target_cnt >= 100 )
+				{
+					set_target_cnt = 0;
+					Set_target(MY_ID, s_buff[Index] );
+						
+					Index = (Index + 1) % Discrete_num;
+				}
+			}
+			
+			#endif
+			
+			
+			
+			if(  MY_ID == 0)
+			{
+				Proto_send(0);
+			}
+			
 			Proto_send(1);
 			
 			
+			//control
+			Advanced_control(1);
+			
+			if( s_communication.s_car[MY_ID].status == 1 )
+			{
+				tmp_output = s_advanced_control.Us + POSITIVE_COMPASETION;
+				if( tmp_output < 0 )
+				{
+					tmp_output = 0;
+				}
+			}
+			else if( s_communication.s_car[MY_ID].status == -1 )
+			{
+				tmp_output = s_advanced_control.Us + NEGTIVE_COMPASETION;	
+				if( tmp_output > 0 )
+				{
+					tmp_output = 0;
+				}
+			}
+			
+			//output
+			motor_out(tmp_output);
+			
+			
+			
+			
 		}
 		
+
 		
-		//超声波更新数值
-		//task_Sonic_update();
+		
+		
+		
+		
+		
+	
+		
+
 		
 		//检测串口接受数据
-		//task_uart_detect();
+		task_uart_detect();
 		
 		
-		
-		
-		
-		if( Global_clock >= 4000 )//20ms
-		{
-			Global_clock = 0;
-			
-			
-			//set_target( 1, -2.0 );
-			#if 0
-			if( flag == 0 )
-			{
-				flag = 1;
-				set_target( 1,0.5 );
-				GPIO_SetBits(GPIOA, GPIO_Pin_8);	
-			}
-			else if( flag == 1 )
-			{
-				flag = 2;
-				set_target( -1,0 );
-				GPIO_ResetBits(GPIOA, GPIO_Pin_8);	
-			}
-			else if( flag == 2 )
-			{
-				flag = 3;
-				set_target( -1,-0.5);
-				GPIO_SetBits(GPIOA, GPIO_Pin_8);	
-			}
-			else 
-			{
-				flag = 0;
-				
-				set_target( +1,0);
-				GPIO_ResetBits(GPIOA, GPIO_Pin_8);	
-			}
-			#endif
 
+		if( Global_clock >= 8000 )//
+		{
+			Globale_flag = 1;
 			
 		}
 		

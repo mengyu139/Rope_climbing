@@ -31,6 +31,9 @@ struct S_CAR
 
 struct S_COMMUNICATION
 {
+	uint8_t op_mode;
+	uint8_t op_number;
+	
 	uint8_t signal ;
 	
 	uint8_t rev_buff[MAX_REV_NUM];

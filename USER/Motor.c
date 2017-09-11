@@ -69,12 +69,8 @@ void Set_target( uint8_t Id, float target)
 	{
 		s_communication.s_car[Id].status = -1;
 	}
-	else
-	{
-		s_communication.s_car[Id].status = 0;
-	}
-	
-	
+
+
 	s_communication.s_car[Id].target_height = target;
 	
 	

@@ -65,7 +65,11 @@ void Set_target( uint8_t id, float target);
 
 void task_update_motor_data(void);
 
+float abs (float a);
+
 
 extern uint32_t Motor_Clock;
+
+
 
 #endif

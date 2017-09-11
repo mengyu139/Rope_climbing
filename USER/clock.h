@@ -9,8 +9,10 @@ void Clock_init(void);
 extern uint32_t led_cnt;
 extern uint32_t Global_clock;
 extern uint32_t send_clock;
+extern uint32_t Globale_flag;
 
-#define Discrete_num  1000
+
+#define Discrete_num  500
 //#define  T  15.0
 #define AMPHILE 0.5
 
